@@ -19,7 +19,7 @@ Following the [official guide](https://docs.docker.com/registry) but using [Cadd
 ## Launch
 
 ```
-docker run --detach --publish 5000:5000 --restart=unless-stopped --name registry registry:2.7.1
+docker run --detach --publish 5000:5000 --restart=unless-stopped --name registry --volume registry:/var/lib/registry registry:2.7.1
 ```
 
 Install [Caddy](https://caddyserver.com/docs/download#debian-ubuntu-raspbian), add the [configuration file](Caddyfile) to `/etc/caddy/Caddyfile` and reload it :
