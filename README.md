@@ -27,3 +27,11 @@ Install [Caddy](https://caddyserver.com/docs/download#debian-ubuntu-raspbian), a
 ```
 systemctl reload caddy
 ```
+
+### Usage
+
+To pull from this registry you need to login first :
+
+```
+docker login docker.01-edu.org
+```
