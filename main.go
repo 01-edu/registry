@@ -61,20 +61,12 @@ func build(ctx context.Context, done chan<- struct{}) {
 						continue
 					}
 				}
-				if b, err := exec.CommandContext(ctx, "git", "-C", folder, "fetch", "--prune").CombinedOutput(); err != nil {
+				if b, err := exec.CommandContext(ctx, "git", "-C", folder, "pull", "--ff-only").CombinedOutput(); err != nil {
 					if ctx.Err() == context.Canceled {
 						wg.Done()
 						return
 					}
-					log.Println("could not fetch", URL, folder, err, ctx.Err(), string(b))
-					continue
-				}
-				if b, err := exec.CommandContext(ctx, "git", "-C", folder, "reset", "--hard", "origin/master").CombinedOutput(); err != nil {
-					if ctx.Err() == context.Canceled {
-						wg.Done()
-						return
-					}
-					log.Println("could not reset", URL, folder, err, ctx.Err(), string(b))
+					log.Println("could not pull", URL, folder, err, ctx.Err(), string(b))
 					continue
 				}
 				for image, cfg := range images {
