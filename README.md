@@ -16,7 +16,7 @@ Deploying a web server, a registry (as a Docker container) and an automated buil
 
 Following the [official guide](https://docs.docker.com/registry) but using [Caddy](https://caddyserver.com) to handle HTTPS (because it's easier), authentication (because it's easier) and proxy to the service.
 
-### Launch
+## Launch
 
 ```
 docker run --detach --publish 5000:5000 --restart=unless-stopped --name registry registry:2.7.1
@@ -28,7 +28,7 @@ Install [Caddy](https://caddyserver.com/docs/download#debian-ubuntu-raspbian), a
 systemctl reload caddy
 ```
 
-### Usage
+## Usage
 
 To pull from this registry you need to login first :
 
