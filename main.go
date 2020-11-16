@@ -80,8 +80,9 @@ func build(ctx context.Context, done chan<- struct{}) {
 								return
 							}
 							log.Println("could not build", URL, image, folder, path, file, err, ctx.Err(), string(b))
+						} else {
+							log.Println("building", image, "done")
 						}
-						log.Println("building", image, "done")
 					}
 				}
 			}
