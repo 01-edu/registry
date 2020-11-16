@@ -24,23 +24,7 @@ docker run --detach --publish 5000:5000 --restart=unless-stopped --name registry
 
 Install [Caddy](https://caddyserver.com/docs/download#debian-ubuntu-raspbian)
 
-Add this configuration to Caddy config file (`/etc/caddy/Caddyfile`) :
-
-```
-{
-    email dev@01-edu.org
-}
-
-https://docker.01-edu.org {
-    header Strict-Transport-Security max-age=31536000;
-    basicauth {
-        root JDJhJDEwJFdPRXN4anpLME5tQ3d2NGRKR0VidS5DUWNSUGY3Z0ZITFEwUU82MFJlMjhXYXd6RE16UG1x
-    }
-    reverse_proxy localhost:5000
-}
-```
-
-Reload Caddy :
+Add the Caddy [configuration file](Caddyfile) to `/etc/caddy/Caddyfile` and reload Caddy :
 
 ```
 systemctl reload caddy
