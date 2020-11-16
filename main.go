@@ -152,6 +152,9 @@ func main() {
 	if err := os.Chdir(".."); err != nil {
 		panic(err)
 	}
+	if b, err := exec.Command("git", "pull", "--ff-only").CombinedOutput(); err != nil {
+		os.Stderr.Write(b)
+	}
 	if b, err := exec.Command("go", "build", "-o", "main.exe", ".").CombinedOutput(); err != nil {
 		os.Stderr.Write(b)
 	}
