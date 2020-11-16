@@ -1,0 +1,11 @@
+{
+    email dev@01-edu.org
+}
+
+https://docker.01-edu.org {
+    header Strict-Transport-Security max-age=31536000;
+    basicauth {
+        root JDJhJDEwJFdPRXN4anpLME5tQ3d2NGRKR0VidS5DUWNSUGY3Z0ZITFEwUU82MFJlMjhXYXd6RE16UG1x
+    }
+    reverse_proxy localhost:5000
+}
