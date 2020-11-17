@@ -123,12 +123,15 @@ func main() {
 	serverDone := make(chan struct{})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		var payload struct {
+			Ref        string
 			Repository struct {
 				URL string `json:"ssh_url"`
 			}
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			log.Println(err)
+		} else if payload.Ref != "refs/heads/master" && payload.Ref != "refs/heads/main" {
+			return
 		} else if c, ok := updateNeeded[payload.Repository.URL]; ok {
 			select {
 			case c <- struct{}{}:
