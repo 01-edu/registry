@@ -74,9 +74,7 @@ func build(ctx context.Context, done chan<- struct{}) {
 						path := filepath.Join(folder, cfg.path)
 						file := filepath.Join(path, cfg.file)
 						log.Println("building", image)
-						if b, err := exec.CommandContext(ctx, "docker", "build", "--tag", image, "--file", file, path).CombinedOutput(); err == nil {
-							log.Println("building", image, "done")
-						} else {
+						if b, err := exec.CommandContext(ctx, "docker", "build", "--tag", image, "--file", file, path).CombinedOutput(); err != nil {
 							if ctx.Err() == context.Canceled {
 								wg.Done()
 								return
@@ -100,6 +98,7 @@ func build(ctx context.Context, done chan<- struct{}) {
 							log.Println("could not push", URL, image, folder, path, file, err, ctx.Err(), string(b))
 							continue
 						}
+						log.Println("building", image, "done")
 					}
 				}
 			}
