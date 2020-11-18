@@ -38,6 +38,21 @@ systemctl reload caddy
 go run . &
 ```
 
+Check that the images are correctly built :
+
+```
+tail -f log.txt
+```
+
+After a moment you should see messages like this :
+
+```
+2020/11/18 17:53:31 building lib-static
+2020/11/18 17:53:31 building run-go
+2020/11/18 17:53:31 building run-go done
+2020/11/18 17:53:31 building lib-static done
+```
+
 ## Usage
 
 To pull from this registry you need to login first :
