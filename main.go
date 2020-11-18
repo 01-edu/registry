@@ -74,14 +74,31 @@ func build(ctx context.Context, done chan<- struct{}) {
 						path := filepath.Join(folder, cfg.path)
 						file := filepath.Join(path, cfg.file)
 						log.Println("building", image)
-						if b, err := exec.CommandContext(ctx, "docker", "build", "--tag", image, "--file", file, path).CombinedOutput(); err != nil {
+						if b, err := exec.CommandContext(ctx, "docker", "build", "--tag", image, "--file", file, path).CombinedOutput(); err == nil {
+							log.Println("building", image, "done")
+						} else {
 							if ctx.Err() == context.Canceled {
 								wg.Done()
 								return
 							}
 							log.Println("could not build", URL, image, folder, path, file, err, ctx.Err(), string(b))
-						} else {
-							log.Println("building", image, "done")
+							continue
+						}
+						if b, err := exec.CommandContext(ctx, "docker", "tag", image, "docker.01-edu.org/"+image).CombinedOutput(); err != nil {
+							if ctx.Err() == context.Canceled {
+								wg.Done()
+								return
+							}
+							log.Println("could not tag", URL, image, folder, path, file, err, ctx.Err(), string(b))
+							continue
+						}
+						if b, err := exec.CommandContext(ctx, "docker", "push", "docker.01-edu.org/"+image).CombinedOutput(); err != nil {
+							if ctx.Err() == context.Canceled {
+								wg.Done()
+								return
+							}
+							log.Println("could not push", URL, image, folder, path, file, err, ctx.Err(), string(b))
+							continue
 						}
 					}
 				}
