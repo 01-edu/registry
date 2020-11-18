@@ -109,6 +109,22 @@ func build(ctx context.Context, done chan<- struct{}) {
 	done <- struct{}{}
 }
 
+func periodicBuild(ctx context.Context) {
+	for {
+		select {
+		case <-time.After(5 * time.Minute):
+		case <-ctx.Done():
+			return
+		}
+		for _, c := range updateNeeded {
+			select {
+			case c <- struct{}{}:
+			default:
+			}
+		}
+	}
+}
+
 func main() {
 	file, err := os.OpenFile("log.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_SYNC, 0644)
 	if err != nil {
@@ -132,6 +148,7 @@ func main() {
 	buildDone := make(chan struct{})
 	ctxBuild, cancelBuild := context.WithCancel(context.Background())
 	go build(ctxBuild, buildDone)
+	go periodicBuild(ctxBuild)
 	srv := http.Server{
 		Addr:         ":8081",
 		ReadTimeout:  15 * time.Second,
