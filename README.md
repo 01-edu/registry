@@ -34,6 +34,8 @@ systemctl reload caddy
 
 ### Automated build service
 
+#### First run
+
 ```
 go run . &
 ```
@@ -52,6 +54,22 @@ After a moment you should see messages like this :
 2020/11/18 17:53:31 building run-go done
 2020/11/18 17:53:31 building lib-static done
 ```
+
+#### System run
+
+Edit cron jobs :
+
+```
+crontab -e
+```
+
+Add this line at the end :
+
+```
+@reboot cd /root/01-edu/docker.01-edu.org && ./main.exe
+```
+
+Save & exit.
 
 ## Usage
 
