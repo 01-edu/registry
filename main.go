@@ -43,18 +43,17 @@ func build(ctx context.Context, done chan<- struct{}) {
 		c := c
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for {
 				select {
 				case <-c:
 				case <-ctx.Done():
-					wg.Done()
 					return
 				}
 				folder := strings.TrimSuffix(strings.TrimPrefix(URL, "git@github.com:01-edu/"), ".git")
 				if _, err := os.Stat(folder); os.IsNotExist(err) {
 					if b, err := exec.CommandContext(ctx, "git", "clone", URL, folder).CombinedOutput(); err != nil {
 						if ctx.Err() == context.Canceled {
-							wg.Done()
 							return
 						}
 						log.Println("could not clone", URL, err, ctx.Err(), string(b))
@@ -63,7 +62,6 @@ func build(ctx context.Context, done chan<- struct{}) {
 				}
 				if b, err := exec.CommandContext(ctx, "git", "-C", folder, "pull", "--ff-only").CombinedOutput(); err != nil {
 					if ctx.Err() == context.Canceled {
-						wg.Done()
 						return
 					}
 					log.Println("could not pull", URL, folder, err, ctx.Err(), string(b))
@@ -76,7 +74,6 @@ func build(ctx context.Context, done chan<- struct{}) {
 						log.Println("building", image)
 						if b, err := exec.CommandContext(ctx, "docker", "build", "--tag", image, "--file", file, path).CombinedOutput(); err != nil {
 							if ctx.Err() == context.Canceled {
-								wg.Done()
 								return
 							}
 							log.Println("could not build", URL, image, folder, path, file, err, ctx.Err(), string(b))
@@ -84,7 +81,6 @@ func build(ctx context.Context, done chan<- struct{}) {
 						}
 						if b, err := exec.CommandContext(ctx, "docker", "tag", image, "docker.01-edu.org/"+image).CombinedOutput(); err != nil {
 							if ctx.Err() == context.Canceled {
-								wg.Done()
 								return
 							}
 							log.Println("could not tag", URL, image, folder, path, file, err, ctx.Err(), string(b))
@@ -92,7 +88,6 @@ func build(ctx context.Context, done chan<- struct{}) {
 						}
 						if b, err := exec.CommandContext(ctx, "docker", "push", "docker.01-edu.org/"+image).CombinedOutput(); err != nil {
 							if ctx.Err() == context.Canceled {
-								wg.Done()
 								return
 							}
 							log.Println("could not push", URL, image, folder, path, file, err, ctx.Err(), string(b))
