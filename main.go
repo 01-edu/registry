@@ -51,20 +51,23 @@ func build(ctx context.Context, done chan<- struct{}) {
 					return
 				}
 				folder := strings.TrimSuffix(strings.TrimPrefix(URL, "git@github.com:01-edu/"), ".git")
+				run := func(name string, arg ...string) error {
+					b, err := exec.CommandContext(ctx, name, arg...).CombinedOutput()
+					if err != nil && ctx.Err() != context.Canceled {
+						log.Println(name, arg, URL, err, ctx.Err(), string(b))
+					}
+					return err
+				}
 				if _, err := os.Stat(folder); os.IsNotExist(err) {
-					if b, err := exec.CommandContext(ctx, "git", "clone", URL, folder).CombinedOutput(); err != nil {
-						if ctx.Err() == context.Canceled {
-							return
-						}
-						log.Println("could not clone", URL, err, ctx.Err(), string(b))
+					if err := run("git", "clone", URL, folder); err == context.Canceled {
+						return
+					} else if err != nil {
 						continue
 					}
 				}
-				if b, err := exec.CommandContext(ctx, "git", "-C", folder, "pull", "--ff-only").CombinedOutput(); err != nil {
-					if ctx.Err() == context.Canceled {
-						return
-					}
-					log.Println("could not pull", URL, folder, err, ctx.Err(), string(b))
+				if err := run("git", "-C", folder, "pull", "--ff-only"); err == context.Canceled {
+					return
+				} else if err != nil {
 					continue
 				}
 				for image, cfg := range images {
@@ -72,25 +75,19 @@ func build(ctx context.Context, done chan<- struct{}) {
 						path := filepath.Join(folder, cfg.path)
 						file := filepath.Join(path, cfg.file)
 						log.Println("building", image)
-						if b, err := exec.CommandContext(ctx, "docker", "build", "--tag", image, "--file", file, path).CombinedOutput(); err != nil {
-							if ctx.Err() == context.Canceled {
-								return
-							}
-							log.Println("could not build", URL, image, folder, path, file, err, ctx.Err(), string(b))
+						if err := run("docker", "build", "--tag", image, "--file", file, path); err == context.Canceled {
+							return
+						} else if err != nil {
 							continue
 						}
-						if b, err := exec.CommandContext(ctx, "docker", "tag", image, "docker.01-edu.org/"+image).CombinedOutput(); err != nil {
-							if ctx.Err() == context.Canceled {
-								return
-							}
-							log.Println("could not tag", URL, image, folder, path, file, err, ctx.Err(), string(b))
+						if err := run("docker", "tag", image, "docker.01-edu.org/"+image); err == context.Canceled {
+							return
+						} else if err != nil {
 							continue
 						}
-						if b, err := exec.CommandContext(ctx, "docker", "push", "docker.01-edu.org/"+image).CombinedOutput(); err != nil {
-							if ctx.Err() == context.Canceled {
-								return
-							}
-							log.Println("could not push", URL, image, folder, path, file, err, ctx.Err(), string(b))
+						if err := run("docker", "push", "docker.01-edu.org/"+image); err == context.Canceled {
+							return
+						} else if err != nil {
 							continue
 						}
 						log.Println("building", image, "done")
