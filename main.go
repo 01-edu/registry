@@ -228,6 +228,7 @@ func main() {
 	if b, err := exec.Command("git", "pull", "--ff-only").CombinedOutput(); err != nil {
 		os.Stderr.Write(b)
 	}
+	os.Remove("main.exe")
 	if b, err := exec.Command("go", "build", "-o", "main.exe", ".").CombinedOutput(); err != nil {
 		os.Stderr.Write(b)
 	}
