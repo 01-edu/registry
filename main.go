@@ -71,6 +71,7 @@ func build(ctx context.Context, done chan<- struct{}) {
 			for {
 				select {
 				case <-c:
+				case <-time.After(5 * time.Minute):
 				case <-ctx.Done():
 					return
 				}
@@ -112,23 +113,7 @@ func build(ctx context.Context, done chan<- struct{}) {
 	done <- struct{}{}
 }
 
-func periodicBuild(ctx context.Context) {
-	for {
-		select {
-		case <-time.After(5 * time.Minute):
-		case <-ctx.Done():
-			return
-		}
-		for _, c := range buildNeeded {
-			select {
-			case c <- struct{}{}:
-			default:
-			}
-		}
-	}
-}
-
-func periodicMirror(ctx context.Context, done chan<- struct{}) {
+func mirror(ctx context.Context, done chan<- struct{}) {
 	var wg sync.WaitGroup
 	for image := range imagesToMirror {
 		image := image
@@ -182,8 +167,7 @@ func main() {
 	mirrorDone := make(chan struct{})
 	ctx, cancel := context.WithCancel(context.Background())
 	go build(ctx, buildDone)
-	go periodicMirror(ctx, mirrorDone)
-	go periodicBuild(ctx)
+	go mirror(ctx, mirrorDone)
 	srv := http.Server{
 		Addr:         ":8081",
 		ReadTimeout:  15 * time.Second,
