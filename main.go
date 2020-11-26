@@ -146,7 +146,7 @@ func periodicMirror(ctx context.Context, done chan<- struct{}) {
 				}
 				cancel()
 				select {
-				case <-time.After(5 * time.Minute):
+				case <-time.After(time.Hour):
 				case <-ctx.Done():
 					wg.Done()
 					return
