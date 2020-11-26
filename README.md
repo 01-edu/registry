@@ -37,7 +37,8 @@ systemctl reload caddy
 #### First run
 
 ```
-go run . &
+go build -o main.exe .
+./main.exe &
 ```
 
 Check that the images are correctly built :

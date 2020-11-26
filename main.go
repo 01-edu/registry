@@ -21,7 +21,7 @@ type config struct {
 	file string // Dockerfile
 }
 
-var images = map[string]config{
+var imagesToBuild = map[string]config{
 	"lib-go":     {"git@github.com:01-edu/all.git", "lib/go", "Dockerfile"},
 	"lib-js":     {"git@github.com:01-edu/all.git", "lib/js", "Dockerfile"},
 	"lib-static": {"git@github.com:01-edu/all.git", "static", "Dockerfile.lib"},
@@ -33,12 +33,36 @@ var images = map[string]config{
 	"subjects":   {"git@github.com:01-edu/public.git", "subjects", "Dockerfile"},
 }
 
-// the keys are URL
-var updateNeeded = map[string]chan struct{}{}
+// the keys are repositories URL
+var buildNeeded = map[string]chan struct{}{}
+
+var imagesToMirror = map[string]struct{}{
+	"alpine:3.12.0":                               {},
+	"alpine/git:1.0.20":                           {},
+	"ankane/pghero:v2.7.0":                        {},
+	"caddy:2.1.1-alpine":                          {},
+	"gitea/gitea:1.11.8":                          {},
+	"golang:1.14.6-alpine3.12":                    {},
+	"hasura/graphql-engine:v1.3.2.cli-migrations": {},
+	"node:12.18.3-alpine3.12":                     {},
+	"postgres:11.8":                               {},
+}
+
+func run(ctx context.Context, commands [][]string) error {
+	for _, command := range commands {
+		if b, err := exec.CommandContext(ctx, command[0], command[1:]...).CombinedOutput(); err != nil {
+			if ctx.Err() != context.Canceled {
+				log.Println(command, err, ctx.Err(), string(b))
+			}
+			return err
+		}
+	}
+	return nil
+}
 
 func build(ctx context.Context, done chan<- struct{}) {
 	var wg sync.WaitGroup
-	for URL, c := range updateNeeded {
+	for URL, c := range buildNeeded {
 		URL := URL
 		c := c
 		wg.Add(1)
@@ -50,47 +74,35 @@ func build(ctx context.Context, done chan<- struct{}) {
 				case <-ctx.Done():
 					return
 				}
+				ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+				defer cancel()
 				folder := strings.TrimSuffix(strings.TrimPrefix(URL, "git@github.com:01-edu/"), ".git")
-				run := func(name string, arg ...string) error {
-					b, err := exec.CommandContext(ctx, name, arg...).CombinedOutput()
-					if err != nil && ctx.Err() != context.Canceled {
-						log.Println(name, arg, URL, err, ctx.Err(), string(b))
-					}
-					return err
-				}
 				if _, err := os.Stat(folder); os.IsNotExist(err) {
-					if err := run("git", "clone", URL, folder); err == context.Canceled {
+					if err := run(ctx, [][]string{{"git", "clone", URL, folder}}); err == context.Canceled {
 						return
 					} else if err != nil {
 						continue
 					}
 				}
-				if err := run("git", "-C", folder, "pull", "--ff-only"); err == context.Canceled {
+				if err := run(ctx, [][]string{{"git", "-C", folder, "pull", "--ff-only"}}); err == context.Canceled {
 					return
 				} else if err != nil {
 					continue
 				}
-				for image, cfg := range images {
+				for image, cfg := range imagesToBuild {
 					if URL == cfg.URL {
 						path := filepath.Join(folder, cfg.path)
 						file := filepath.Join(path, cfg.file)
 						log.Println("building", image)
-						if err := run("docker", "build", "--tag", image, "--file", file, path); err == context.Canceled {
+						if err := run(ctx, [][]string{
+							{"docker", "build", "--tag", image, "--file", file, path},
+							{"docker", "tag", image, "docker.01-edu.org/" + image},
+							{"docker", "push", "docker.01-edu.org/" + image},
+						}); err == context.Canceled {
 							return
-						} else if err != nil {
-							continue
+						} else if err == nil {
+							log.Println("building", image, "done")
 						}
-						if err := run("docker", "tag", image, "docker.01-edu.org/"+image); err == context.Canceled {
-							return
-						} else if err != nil {
-							continue
-						}
-						if err := run("docker", "push", "docker.01-edu.org/"+image); err == context.Canceled {
-							return
-						} else if err != nil {
-							continue
-						}
-						log.Println("building", image, "done")
 					}
 				}
 			}
@@ -107,13 +119,43 @@ func periodicBuild(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
-		for _, c := range updateNeeded {
+		for _, c := range buildNeeded {
 			select {
 			case c <- struct{}{}:
 			default:
 			}
 		}
 	}
+}
+
+func mirror(ctx context.Context, done chan<- struct{}) {
+	var wg sync.WaitGroup
+	for image := range imagesToMirror {
+		image := image
+		wg.Add(1)
+		go func() {
+			for {
+				select {
+				case <-time.After(5 * time.Minute):
+				case <-ctx.Done():
+					wg.Done()
+					return
+				}
+				ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+				log.Println("mirroring", image)
+				if err := run(ctx, [][]string{
+					{"docker", "pull", image},
+					{"docker", "tag", image, "docker.01-edu.org/" + image},
+					{"docker", "push", "docker.01-edu.org/" + image},
+				}); err == nil {
+					log.Println("mirroring", image, "done")
+				}
+				cancel()
+			}
+		}()
+	}
+	wg.Wait()
+	done <- struct{}{}
 }
 
 func main() {
@@ -132,14 +174,16 @@ func main() {
 	if err := os.Chdir("repositories"); err != nil {
 		panic(err)
 	}
-	for _, cfg := range images {
-		updateNeeded[cfg.URL] = make(chan struct{}, 1)
-		updateNeeded[cfg.URL] <- struct{}{}
+	for _, cfg := range imagesToBuild {
+		buildNeeded[cfg.URL] = make(chan struct{}, 1)
+		buildNeeded[cfg.URL] <- struct{}{}
 	}
 	buildDone := make(chan struct{})
-	ctxBuild, cancelBuild := context.WithCancel(context.Background())
-	go build(ctxBuild, buildDone)
-	go periodicBuild(ctxBuild)
+	mirrorDone := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	go build(ctx, buildDone)
+	go mirror(ctx, mirrorDone)
+	go periodicBuild(ctx)
 	srv := http.Server{
 		Addr:         ":8081",
 		ReadTimeout:  15 * time.Second,
@@ -157,7 +201,7 @@ func main() {
 			log.Println(err)
 		} else if payload.Ref != "refs/heads/master" && payload.Ref != "refs/heads/main" {
 			return
-		} else if c, ok := updateNeeded[payload.Repository.URL]; ok {
+		} else if c, ok := buildNeeded[payload.Repository.URL]; ok {
 			select {
 			case c <- struct{}{}:
 			default:
@@ -165,7 +209,7 @@ func main() {
 		} else if payload.Repository.URL == "git@github.com:01-edu/docker.01-edu.org.git" {
 			go func() {
 				log.Println("shutting down")
-				cancelBuild()
+				cancel()
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 				if err := srv.Shutdown(ctx); err != nil {
@@ -188,6 +232,7 @@ func main() {
 		os.Stderr.Write(b)
 	}
 	<-serverDone
+	<-mirrorDone
 	<-buildDone
 	log.Println("rebooting")
 	file.Close()
