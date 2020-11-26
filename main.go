@@ -128,22 +128,16 @@ func periodicBuild(ctx context.Context) {
 	}
 }
 
-func mirror(ctx context.Context, done chan<- struct{}) {
+func periodicMirror(ctx context.Context, done chan<- struct{}) {
 	var wg sync.WaitGroup
 	for image := range imagesToMirror {
 		image := image
 		wg.Add(1)
 		go func() {
 			for {
-				select {
-				case <-time.After(5 * time.Minute):
-				case <-ctx.Done():
-					wg.Done()
-					return
-				}
-				ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+				ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Minute)
 				log.Println("mirroring", image)
-				if err := run(ctx, [][]string{
+				if err := run(ctxTimeout, [][]string{
 					{"docker", "pull", image},
 					{"docker", "tag", image, "docker.01-edu.org/" + image},
 					{"docker", "push", "docker.01-edu.org/" + image},
@@ -151,6 +145,12 @@ func mirror(ctx context.Context, done chan<- struct{}) {
 					log.Println("mirroring", image, "done")
 				}
 				cancel()
+				select {
+				case <-time.After(5 * time.Minute):
+				case <-ctx.Done():
+					wg.Done()
+					return
+				}
 			}
 		}()
 	}
@@ -182,7 +182,7 @@ func main() {
 	mirrorDone := make(chan struct{})
 	ctx, cancel := context.WithCancel(context.Background())
 	go build(ctx, buildDone)
-	go mirror(ctx, mirrorDone)
+	go periodicMirror(ctx, mirrorDone)
 	go periodicBuild(ctx)
 	srv := http.Server{
 		Addr:         ":8081",
