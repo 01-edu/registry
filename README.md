@@ -67,7 +67,7 @@ crontab -e
 Add this line at the end :
 
 ```
-@reboot cd /root/01-edu/docker.01-edu.org && ./main.exe
+@reboot cd /root/docker.01-edu.org && ./main.exe
 ```
 
 Save & exit.
