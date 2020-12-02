@@ -21,32 +21,42 @@ type config struct {
 	file string // Dockerfile
 }
 
-var imagesToBuild = map[string]config{
-	"lib-go":     {"git@github.com:01-edu/all.git", "lib/go", "Dockerfile"},
-	"lib-js":     {"git@github.com:01-edu/all.git", "lib/js", "Dockerfile"},
-	"lib-static": {"git@github.com:01-edu/all.git", "static", "Dockerfile.lib"},
-	"test-dom":   {"git@github.com:01-edu/public.git", "", "dom/Dockerfile"},
-	"run-go":     {"git@github.com:01-edu/public.git", "go/exam", "Dockerfile"},
-	"test-go":    {"git@github.com:01-edu/public.git", "go/tests", "Dockerfile"},
-	"test-js":    {"git@github.com:01-edu/public.git", "js/tests", "Dockerfile"},
-	"test-sh":    {"git@github.com:01-edu/public.git", "sh/tests", "Dockerfile"},
-	"subjects":   {"git@github.com:01-edu/public.git", "subjects", "Dockerfile"},
-}
+var (
+	imagesToBuild = map[string]config{
+		"lib-go":     {"git@github.com:01-edu/all.git", "lib/go", "Dockerfile"},
+		"lib-js":     {"git@github.com:01-edu/all.git", "lib/js", "Dockerfile"},
+		"lib-static": {"git@github.com:01-edu/all.git", "static", "Dockerfile.lib"},
+		"test-dom":   {"git@github.com:01-edu/public.git", "", "dom/Dockerfile"},
+		"run-go":     {"git@github.com:01-edu/public.git", "go/exam", "Dockerfile"},
+		"test-go":    {"git@github.com:01-edu/public.git", "go/tests", "Dockerfile"},
+		"test-js":    {"git@github.com:01-edu/public.git", "js/tests", "Dockerfile"},
+		"test-sh":    {"git@github.com:01-edu/public.git", "sh/tests", "Dockerfile"},
+		"subjects":   {"git@github.com:01-edu/public.git", "subjects", "Dockerfile"},
+	}
 
-// the keys are repositories URL
-var buildNeeded = map[string]chan struct{}{}
+	imagesToMirror = map[string]struct{}{
+		"alpine:3.12.0":                               {},
+		"alpine/git:1.0.20":                           {},
+		"ankane/pghero:v2.7.0":                        {},
+		"caddy:2.1.1-alpine":                          {},
+		"gitea/gitea:1.11.8":                          {},
+		"golang:1.14.6-alpine3.12":                    {},
+		"hasura/graphql-engine:v1.3.2.cli-migrations": {},
+		"node:12.18.3-alpine3.12":                     {},
+		"postgres:11.8":                               {},
+	}
 
-var imagesToMirror = map[string]struct{}{
-	"alpine:3.12.0":                               {},
-	"alpine/git:1.0.20":                           {},
-	"ankane/pghero:v2.7.0":                        {},
-	"caddy:2.1.1-alpine":                          {},
-	"gitea/gitea:1.11.8":                          {},
-	"golang:1.14.6-alpine3.12":                    {},
-	"hasura/graphql-engine:v1.3.2.cli-migrations": {},
-	"node:12.18.3-alpine3.12":                     {},
-	"postgres:11.8":                               {},
-}
+	webhooksToCall = map[string]map[string]struct{}{
+		"https://01.alem.school/api/updater":               {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://demo.01-edu.org/api/updater":              {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://honoriscentraleit.01-edu.org/api/updater": {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://ytrack.learn.ynov.com/api/updater":        {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://beta.01-edu.org/api/updater":              {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+	}
+
+	// the keys are repositories URL
+	buildNeeded = map[string]chan struct{}{}
+)
 
 func run(ctx context.Context, commands [][]string) error {
 	for _, command := range commands {
@@ -101,8 +111,26 @@ func build(ctx context.Context, done chan<- struct{}) {
 							{"docker", "push", "docker.01-edu.org/" + image},
 						}); err == context.Canceled {
 							return
-						} else if err == nil {
-							log.Println("building", image, "done")
+						} else if err != nil {
+							continue
+						}
+						log.Println("building", image, "done")
+						for webhookToCall, images := range webhooksToCall {
+							if _, ok := images[image]; ok {
+								req, err := http.NewRequestWithContext(ctx, "PUT", webhookToCall, nil)
+								if err != nil {
+									panic(err)
+								}
+								resp, err := http.DefaultClient.Do(req)
+								if err == context.Canceled {
+									return
+								}
+								if err != nil {
+									log.Println(webhookToCall, err, ctx.Err())
+								} else {
+									resp.Body.Close()
+								}
+							}
 						}
 					}
 				}
