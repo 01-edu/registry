@@ -27,7 +27,6 @@ var (
 		"lib-js":     {"git@github.com:01-edu/all.git", "lib/js", "Dockerfile"},
 		"lib-static": {"git@github.com:01-edu/all.git", "static", "Dockerfile.lib"},
 		"test-dom":   {"git@github.com:01-edu/public.git", "", "dom/Dockerfile"},
-		"run-go":     {"git@github.com:01-edu/public.git", "go/exam", "Dockerfile"},
 		"test-go":    {"git@github.com:01-edu/public.git", "go/tests", "Dockerfile"},
 		"test-js":    {"git@github.com:01-edu/public.git", "js/tests", "Dockerfile"},
 		"test-sh":    {"git@github.com:01-edu/public.git", "sh/tests", "Dockerfile"},
@@ -47,11 +46,11 @@ var (
 	}
 
 	webhooksToCall = map[string]map[string]struct{}{
-		"https://01.alem.school/api/updater":               {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
-		"https://demo.01-edu.org/api/updater":              {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
-		"https://honoriscentraleit.01-edu.org/api/updater": {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
-		"https://ytrack.learn.ynov.com/api/updater":        {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
-		"https://beta.01-edu.org/api/updater":              {"test-dom": {}, "run-go": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://01.alem.school/api/updater":               {"test-dom": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://demo.01-edu.org/api/updater":              {"test-dom": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://honoriscentraleit.01-edu.org/api/updater": {"test-dom": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://ytrack.learn.ynov.com/api/updater":        {"test-dom": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
+		"https://beta.01-edu.org/api/updater":              {"test-dom": {}, "test-go": {}, "test-js": {}, "test-sh": {}},
 	}
 
 	// the keys are repositories URL
