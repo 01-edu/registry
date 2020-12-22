@@ -37,8 +37,8 @@ systemctl reload caddy
 #### First run
 
 ```
-go build -o main.exe .
-./main.exe &
+go build -o docker.01-edu.org.exe .
+./docker.01-edu.org.exe &
 ```
 
 Check that the images are correctly built :
@@ -67,7 +67,7 @@ crontab -e
 Add this line at the end :
 
 ```
-@reboot cd /root/docker.01-edu.org && ./main.exe
+@reboot cd /root/docker.01-edu.org && ./docker.01-edu.org.exe
 ```
 
 Save & exit.

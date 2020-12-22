@@ -240,7 +240,7 @@ func main() {
 	if b, err := exec.Command("git", "pull", "--ff-only").CombinedOutput(); err != nil {
 		os.Stderr.Write(b)
 	}
-	if b, err := exec.Command("go", "build", "-o", "main.exe", ".").CombinedOutput(); err != nil {
+	if b, err := exec.Command("go", "build", "-o", "docker.01-edu.org.exe", ".").CombinedOutput(); err != nil {
 		os.Stderr.Write(b)
 	}
 	<-serverDone
@@ -248,7 +248,7 @@ func main() {
 	<-buildDone
 	log.Println("rebooting")
 	file.Close()
-	if err := syscall.Exec("main.exe", []string{"main.exe"}, os.Environ()); err != nil {
+	if err := syscall.Exec("docker.01-edu.org.exe", []string{"docker.01-edu.org.exe"}, os.Environ()); err != nil {
 		panic(err)
 	}
 }
