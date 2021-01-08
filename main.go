@@ -29,9 +29,9 @@ var (
 		"test-dom":   {"git@github.com:01-edu/public.git", "", "dom/Dockerfile"},
 		"test-go":    {"git@github.com:01-edu/public.git", "go/tests", "Dockerfile"},
 		"test-js":    {"git@github.com:01-edu/public.git", "js/tests", "Dockerfile"},
-		"test-rust":  {"git@github.com:01-edu/test-rust.git", "", "Dockerfile"},
 		"test-sh":    {"git@github.com:01-edu/public.git", "sh/tests", "Dockerfile"},
 		"subjects":   {"git@github.com:01-edu/public.git", "subjects", "Dockerfile"},
+		"test-rust":  {"git@github.com:01-edu/rust-tests.git", "", "Dockerfile"},
 	}
 
 	imagesToMirror = map[string]struct{}{
