@@ -23,7 +23,6 @@ type config struct {
 
 var (
 	imagesToBuild = map[string]config{
-		"lib-go":     {"git@github.com:01-edu/all.git", "lib/go", "Dockerfile"},
 		"lib-js":     {"git@github.com:01-edu/all.git", "lib/js", "Dockerfile"},
 		"lib-static": {"git@github.com:01-edu/all.git", "static", "Dockerfile.lib"},
 		"test-dom":   {"git@github.com:01-edu/public.git", "", "dom/Dockerfile"},
