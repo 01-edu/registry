@@ -51,12 +51,12 @@ var (
 		"postgres:11.11":                              {},
 	}
 
-	webhooksToCall = map[string]map[string]struct{}{
-		"https://01.alem.school/api/updater":               {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
-		"https://demo.01-edu.org/api/updater":              {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
-		"https://ytrack.learn.ynov.com/api/updater":        {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
-		"https://beta.01-edu.org/api/updater":              {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
-		"https://zero.academie.one/api/updater":            {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
+	webhooksToCall = []string{
+		"https://01.alem.school/api/updater",
+		"https://demo.01-edu.org/api/updater",
+		"https://ytrack.learn.ynov.com/api/updater",
+		"https://beta.01-edu.org/api/updater",
+		"https://zero.academie.one/api/updater",
 	}
 
 	// the keys are repositories URL
@@ -120,21 +120,19 @@ func build(ctx context.Context, done chan<- struct{}) {
 							continue
 						}
 						log.Println("building", image, "done")
-						for webhookToCall, images := range webhooksToCall {
-							if _, ok := images[image]; ok {
-								req, err := http.NewRequestWithContext(ctx, "PUT", webhookToCall, nil)
-								if err != nil {
-									panic(err)
-								}
-								resp, err := http.DefaultClient.Do(req)
-								if err == context.Canceled {
-									return
-								}
-								if err != nil {
-									log.Println(webhookToCall, err, ctx.Err())
-								} else {
-									resp.Body.Close()
-								}
+						for _, webhookToCall := range webhooksToCall {
+							req, err := http.NewRequestWithContext(ctx, "PUT", webhookToCall, nil)
+							if err != nil {
+								panic(err)
+							}
+							resp, err := http.DefaultClient.Do(req)
+							if err == context.Canceled {
+								return
+							}
+							if err != nil {
+								log.Println(webhookToCall, err, ctx.Err())
+							} else {
+								resp.Body.Close()
 							}
 						}
 					}
