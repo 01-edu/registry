@@ -54,9 +54,9 @@ var (
 	webhooksToCall = map[string]map[string]struct{}{
 		"https://01.alem.school/api/updater":               {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
 		"https://demo.01-edu.org/api/updater":              {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
-		"https://honoriscentraleit.01-edu.org/api/updater": {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
 		"https://ytrack.learn.ynov.com/api/updater":        {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
 		"https://beta.01-edu.org/api/updater":              {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
+		"https://zero.academie.one/api/updater":            {"test-dom": {}, "test-go": {}, "test-js": {}, "test-rust": {}, "test-sh": {}},
 	}
 
 	// the keys are repositories URL
