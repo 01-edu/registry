@@ -34,21 +34,24 @@ var (
 	}
 
 	imagesToMirror = map[string]struct{}{
-		"alpine:3.12.0":                               {},
 		"alpine:3.13.2":                               {},
+		"alpine:3.13.4":                               {},
 		"alpine/git:1.0.20":                           {},
-		"ankane/pghero:v2.7.0":                        {},
+		"alpine/git:1.0.26":                           {},
 		"ankane/pghero:v2.7.4":                        {},
-		"caddy:2.1.1-alpine":                          {},
+		"ankane/pghero:v2.8.1":                        {},
 		"caddy:2.2.1-alpine":                          {},
+		"caddy:2.3.0-alpine":                          {},
 		"gitea/gitea:1.11.8":                          {},
-		"golang:1.14.6-alpine3.12":                    {},
+		"gitea/gitea:1.13.6":                          {},
 		"golang:1.16.0-alpine3.13":                    {},
+		"golang:1.16.3-alpine3.13":                    {},
 		"hasura/graphql-engine:v1.3.2.cli-migrations": {},
-		"node:12.18.3-alpine3.12":                     {},
+		"hasura/graphql-engine:v1.3.3.cli-migrations": {},
 		"node:14.15.5-alpine3.13":                     {},
-		"postgres:11.8":                               {},
+		"node:14.16.0-alpine3.13":                     {},
 		"postgres:11.11":                              {},
+		"postgres:12.6":                               {},
 	}
 
 	webhooksToCall = []string{
