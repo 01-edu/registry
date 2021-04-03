@@ -42,6 +42,7 @@ var (
 		"ankane/pghero:v2.8.1":                        {},
 		"caddy:2.2.1-alpine":                          {},
 		"caddy:2.3.0-alpine":                          {},
+		"debian:10.9-slim":                            {},
 		"gitea/gitea:1.11.8":                          {},
 		"gitea/gitea:1.13.6":                          {},
 		"golang:1.16.0-alpine3.13":                    {},
