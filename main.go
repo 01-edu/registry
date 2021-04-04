@@ -90,7 +90,7 @@ func build(ctx context.Context, done chan<- struct{}) {
 			for {
 				select {
 				case <-c:
-				case <-time.After(5 * time.Minute):
+				case <-time.After(time.Hour):
 				case <-ctx.Done():
 					return
 				}
