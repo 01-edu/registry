@@ -26,10 +26,10 @@ var (
 		"lib-js":     {"git@github.com:01-edu/all.git", "lib/js", "Dockerfile"},
 		"lib-static": {"git@github.com:01-edu/all.git", "static", "Dockerfile.lib"},
 		"test-dom":   {"git@github.com:01-edu/public.git", "", "dom/Dockerfile"},
-		"test-go":    {"git@github.com:01-edu/public.git", "go/tests", "Dockerfile"},
 		"test-js":    {"git@github.com:01-edu/public.git", "js/tests", "Dockerfile"},
 		"test-sh":    {"git@github.com:01-edu/public.git", "sh/tests", "Dockerfile"},
 		"subjects":   {"git@github.com:01-edu/public.git", "subjects", "Dockerfile"},
+		"test-go":    {"git@github.com:01-edu/go-tests.git", "", "Dockerfile"},
 		"test-rust":  {"git@github.com:01-edu/rust-tests.git", "", "Dockerfile"},
 	}
 
