@@ -123,10 +123,8 @@ func handleWebhook(URLToBuild chan<- string) http.HandlerFunc {
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			log.Println("Cannot decode webhook", err)
-			return
 		} else if payload.Ref != "refs/heads/master" && payload.Ref != "refs/heads/main" {
 			log.Println("Branch is not master/main", payload.Ref)
-			return
 		} else if payload.Repository.URL == "git@github.com:01-edu/registry.git" {
 			m.Lock()
 			run("git", "pull", "--ff-only")
