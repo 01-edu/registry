@@ -129,7 +129,7 @@ func handleWebhook(URLToBuild chan<- string) http.HandlerFunc {
 			m.Lock()
 			run("git", "pull", "--ff-only")
 			m.Unlock()
-		} else {
+		} else if payload.Repository.URL != "" {
 			URLToBuild <- payload.Repository.URL
 		}
 	}

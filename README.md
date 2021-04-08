@@ -102,7 +102,7 @@ If you edit those files directly on GitHub or push them, the registry service wi
 Manually trigger a rebuild (because the webhook wasn't configured correctly), here is an exmaple with github.com/01-edu/public:
 
 ```
-curl https://webhook.docker.01-edu.org -d'{"ref":"refs/heads/master","repository":{"url":"git@github.com:01-edu/public.git"}}'
+curl https://webhook.docker.01-edu.org -d'{"ref":"refs/heads/master","repository":{"ssh_url":"git@github.com:01-edu/public.git"}}'
 ```
 
 #### Maintenance
