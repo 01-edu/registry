@@ -12,5 +12,12 @@ https://docker.01-edu.org {
 
 https://webhook.docker.01-edu.org {
     header Strict-Transport-Security max-age=31536000;
-    reverse_proxy localhost:8081
+    handle /log.txt {
+        file_server {
+            root /opt/registry
+        }
+    }
+    handle {
+        reverse_proxy localhost:8081
+    }
 }

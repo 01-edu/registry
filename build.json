@@ -1,0 +1,42 @@
+{
+  "lib-js": {
+    "URL": "git@github.com:01-edu/all.git",
+    "path": "lib/js",
+    "file": "Dockerfile"
+  },
+  "lib-static": {
+    "URL": "git@github.com:01-edu/all.git",
+    "path": "static",
+    "file": "Dockerfile.lib"
+  },
+  "test-dom": {
+    "URL": "git@github.com:01-edu/public.git",
+    "path": "",
+    "file": "dom/Dockerfile"
+  },
+  "test-js": {
+    "URL": "git@github.com:01-edu/public.git",
+    "path": "js/tests",
+    "file": "Dockerfile"
+  },
+  "test-sh": {
+    "URL": "git@github.com:01-edu/public.git",
+    "path": "sh/tests",
+    "file": "Dockerfile"
+  },
+  "subjects": {
+    "URL": "git@github.com:01-edu/public.git",
+    "path": "subjects",
+    "file": "Dockerfile"
+  },
+  "test-go": {
+    "URL": "git@github.com:01-edu/go-tests.git",
+    "path": "",
+    "file": "Dockerfile"
+  },
+  "test-rust": {
+    "URL": "git@github.com:01-edu/rust-tests.git",
+    "path": "",
+    "file": "Dockerfile"
+  }
+}

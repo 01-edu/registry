@@ -8,208 +8,113 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
 type config struct {
 	URL  string // Repository URL
-	path string // Docker context
-	file string // Dockerfile
+	Path string // Docker context
+	File string // Dockerfile
 }
 
-var (
-	imagesToBuild = map[string]config{
-		"lib-js":     {"git@github.com:01-edu/all.git", "lib/js", "Dockerfile"},
-		"lib-static": {"git@github.com:01-edu/all.git", "static", "Dockerfile.lib"},
-		"test-dom":   {"git@github.com:01-edu/public.git", "", "dom/Dockerfile"},
-		"test-js":    {"git@github.com:01-edu/public.git", "js/tests", "Dockerfile"},
-		"test-sh":    {"git@github.com:01-edu/public.git", "sh/tests", "Dockerfile"},
-		"subjects":   {"git@github.com:01-edu/public.git", "subjects", "Dockerfile"},
-		"test-go":    {"git@github.com:01-edu/go-tests.git", "", "Dockerfile"},
-		"test-rust":  {"git@github.com:01-edu/rust-tests.git", "", "Dockerfile"},
+// m is used to lock JSON files
+var m sync.RWMutex
+
+func panicIfNot(target, err error) {
+	if err != nil && err != target && !errors.Is(err, target) {
+		panic(err)
 	}
+}
 
-	imagesToMirror = map[string]struct{}{
-		"alpine:3.13.2":                               {},
-		"alpine:3.13.4":                               {},
-		"alpine/git:1.0.20":                           {},
-		"alpine/git:1.0.26":                           {},
-		"ankane/pghero:v2.7.4":                        {},
-		"ankane/pghero:v2.8.1":                        {},
-		"caddy:2.2.1-alpine":                          {},
-		"caddy:2.3.0-alpine":                          {},
-		"debian:10.9-slim":                            {},
-		"gitea/gitea:1.11.8":                          {},
-		"gitea/gitea:1.13.6":                          {},
-		"golang:1.16.0-alpine3.13":                    {},
-		"golang:1.16.3-alpine3.13":                    {},
-		"hasura/graphql-engine:v1.3.2.cli-migrations": {},
-		"hasura/graphql-engine:v1.3.3.cli-migrations": {},
-		"node:14.15.5-alpine3.13":                     {},
-		"node:14.16.0-alpine3.13":                     {},
-		"postgres:11.11":                              {},
-		"postgres:12.6":                               {},
+func readJSON(file string, v interface{}) {
+	m.RLock()
+	defer m.RUnlock()
+	b, err := os.ReadFile(file)
+	panicIfNot(nil, err)
+	panicIfNot(nil, json.Unmarshal(b, v))
+}
+
+func webhooks() (webhooksToCall []string) {
+	readJSON("webhooks.json", &webhooksToCall)
+	return
+}
+
+func imagesToBuild() (images map[string]config) {
+	readJSON("build.json", &images)
+	return
+}
+
+func imagesToMirror() (images []string) {
+	readJSON("mirror.json", &images)
+	return
+}
+
+func run(name string, args ...string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	log.Println(name, args)
+	b, err := exec.CommandContext(ctx, name, args...).CombinedOutput()
+	if err == nil {
+		return true
 	}
-
-	webhooksToCall = []string{
-		"https://01.alem.school/api/updater",
-		"https://demo.01-edu.org/api/updater",
-		"https://ytrack.learn.ynov.com/api/updater",
-		"https://beta.01-edu.org/api/updater",
-		"https://zero.academie.one/api/updater",
+	if _, ok := err.(*exec.ExitError); !ok {
+		panic(err)
 	}
+	log.Println(name, args, string(b), err, ctx.Err())
+	return false
+}
 
-	// the keys are repositories URL
-	buildNeeded = map[string]chan struct{}{}
-)
-
-func run(ctx context.Context, commands [][]string) error {
-	for _, command := range commands {
-		if b, err := exec.CommandContext(ctx, command[0], command[1:]...).CombinedOutput(); err != nil {
-			if ctx.Err() != context.Canceled {
-				log.Println(command, err, ctx.Err(), string(b))
+func mirror() {
+	for {
+		start := time.Now()
+		for _, image := range imagesToMirror() {
+			if run("docker", "pull", image) &&
+				run("docker", "tag", image, "docker.01-edu.org/"+image) {
+				run("docker", "push", "docker.01-edu.org/"+image)
 			}
-			return err
+		}
+		time.Sleep(time.Hour - time.Since(start))
+	}
+}
+
+func build(URLToBuild <-chan string) {
+	for URL := range URLToBuild {
+		dir := path.Join("repositories", strings.TrimSuffix(path.Base(URL), ".git"))
+		if _, err := os.Stat(dir); os.IsNotExist(err) && !run("git", "clone", URL, dir) {
+			return
+		} else if !run("git", "-C", dir, "pull", "--ff-only") {
+			return
+		}
+		for image, cfg := range imagesToBuild() {
+			if URL == cfg.URL {
+				dir := path.Join(dir, cfg.Path)
+				file := path.Join(dir, cfg.File)
+				if run("docker", "build", "--tag", "docker.01-edu.org/"+image, "--file", file, dir) &&
+					run("docker", "push", "docker.01-edu.org/"+image) {
+					for _, webhook := range webhooks() {
+						req, err := http.NewRequest("PUT", webhook, nil)
+						panicIfNot(nil, err)
+						resp, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
+						if err != nil {
+							log.Println(webhook, err)
+						} else {
+							resp.Body.Close()
+						}
+					}
+				}
+			}
 		}
 	}
-	return nil
 }
 
-func build(ctx context.Context, done chan<- struct{}) {
-	var wg sync.WaitGroup
-	for URL, c := range buildNeeded {
-		URL := URL
-		c := c
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for {
-				select {
-				case <-c:
-				case <-time.After(time.Hour):
-				case <-ctx.Done():
-					return
-				}
-				ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-				defer cancel()
-				folder := strings.TrimSuffix(strings.TrimPrefix(URL, "git@github.com:01-edu/"), ".git")
-				if _, err := os.Stat(folder); os.IsNotExist(err) {
-					if err := run(ctx, [][]string{{"git", "clone", URL, folder}}); err == context.Canceled {
-						return
-					} else if err != nil {
-						continue
-					}
-				}
-				if err := run(ctx, [][]string{{"git", "-C", folder, "pull", "--ff-only"}}); err == context.Canceled {
-					return
-				} else if err != nil {
-					continue
-				}
-				for image, cfg := range imagesToBuild {
-					if URL == cfg.URL {
-						path := filepath.Join(folder, cfg.path)
-						file := filepath.Join(path, cfg.file)
-						log.Println("building", image)
-						if err := run(ctx, [][]string{
-							{"docker", "build", "--tag", image, "--file", file, path},
-							{"docker", "tag", image, "docker.01-edu.org/" + image},
-							{"docker", "push", "docker.01-edu.org/" + image},
-						}); err == context.Canceled {
-							return
-						} else if err != nil {
-							continue
-						}
-						log.Println("building", image, "done")
-						for _, webhookToCall := range webhooksToCall {
-							req, err := http.NewRequestWithContext(ctx, "PUT", webhookToCall, nil)
-							if err != nil {
-								panic(err)
-							}
-							resp, err := http.DefaultClient.Do(req)
-							if err == context.Canceled {
-								return
-							}
-							if err != nil {
-								log.Println(webhookToCall, err, ctx.Err())
-							} else {
-								resp.Body.Close()
-							}
-						}
-					}
-				}
-			}
-		}()
-	}
-	wg.Wait()
-	done <- struct{}{}
-}
-
-func mirror(ctx context.Context, done chan<- struct{}) {
-	var wg sync.WaitGroup
-	for image := range imagesToMirror {
-		image := image
-		wg.Add(1)
-		go func() {
-			for {
-				ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Minute)
-				log.Println("mirroring", image)
-				if err := run(ctxTimeout, [][]string{
-					{"docker", "pull", image},
-					{"docker", "tag", image, "docker.01-edu.org/" + image},
-					{"docker", "push", "docker.01-edu.org/" + image},
-				}); err == nil {
-					log.Println("mirroring", image, "done")
-				}
-				cancel()
-				select {
-				case <-time.After(time.Hour):
-				case <-ctx.Done():
-					wg.Done()
-					return
-				}
-			}
-		}()
-	}
-	wg.Wait()
-	done <- struct{}{}
-}
-
-func main() {
-	file, err := os.OpenFile("log.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_SYNC, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-	// Redirect stderr (default log & panic output) to log.txt
-	if err := syscall.Dup2(int(file.Fd()), int(os.Stderr.Fd())); err != nil {
-		panic(err)
-	}
-	if err := os.Mkdir("repositories", os.ModePerm); err != nil && !errors.Is(err, os.ErrExist) {
-		panic(err)
-	}
-	if err := os.Chdir("repositories"); err != nil {
-		panic(err)
-	}
-	for _, cfg := range imagesToBuild {
-		buildNeeded[cfg.URL] = make(chan struct{}, 1)
-		buildNeeded[cfg.URL] <- struct{}{}
-	}
-	buildDone := make(chan struct{})
-	mirrorDone := make(chan struct{})
-	ctx, cancel := context.WithCancel(context.Background())
-	go build(ctx, buildDone)
-	go mirror(ctx, mirrorDone)
-	srv := http.Server{
-		Addr:         ":8081",
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-	}
-	serverDone := make(chan struct{})
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func handleWebhook(URLToBuild chan<- string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost { // GitHub webhooks are POST requests
+			return
+		}
 		var payload struct {
 			Ref        string
 			Repository struct {
@@ -217,45 +122,39 @@ func main() {
 			}
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			log.Println(err)
-		} else if payload.Ref != "refs/heads/master" && payload.Ref != "refs/heads/main" {
+			log.Println("Cannot decode webhook", err)
 			return
-		} else if c, ok := buildNeeded[payload.Repository.URL]; ok {
-			select {
-			case c <- struct{}{}:
-			default:
-			}
-		} else if payload.Repository.URL == "git@github.com:01-edu/docker.01-edu.org.git" {
-			go func() {
-				log.Println("shutting down")
-				cancel()
-				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-				defer cancel()
-				if err := srv.Shutdown(ctx); err != nil {
-					panic(err)
-				}
-				serverDone <- struct{}{}
-			}()
+		} else if payload.Ref != "refs/heads/master" && payload.Ref != "refs/heads/main" {
+			log.Println("Branch is not master/main", payload.Ref)
+			return
+		} else if payload.Repository.URL == "git@github.com:01-edu/registry.git" {
+			m.Lock()
+			run("git", "pull", "--ff-only")
+			m.Unlock()
+		} else {
+			URLToBuild <- payload.Repository.URL
 		}
-	})
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		panic(err)
 	}
-	if err := os.Chdir(".."); err != nil {
-		panic(err)
+}
+
+func main() {
+	go mirror()
+	URLToBuild := make(chan string)
+	go build(URLToBuild)
+	go func() { // first build
+		URL := map[string]struct{}{}
+		for _, cfg := range imagesToBuild() {
+			URL[cfg.URL] = struct{}{}
+		}
+		for URL := range URL {
+			URLToBuild <- URL
+		}
+	}()
+	http.HandleFunc("/", handleWebhook(URLToBuild))
+	srv := http.Server{
+		Addr:         ":8081",
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
 	}
-	if b, err := exec.Command("git", "pull", "--ff-only").CombinedOutput(); err != nil {
-		os.Stderr.Write(b)
-	}
-	if b, err := exec.Command("go", "build", "-o", "docker.01-edu.org.exe", ".").CombinedOutput(); err != nil {
-		os.Stderr.Write(b)
-	}
-	<-serverDone
-	<-mirrorDone
-	<-buildDone
-	log.Println("rebooting")
-	file.Close()
-	if err := syscall.Exec("docker.01-edu.org.exe", []string{"docker.01-edu.org.exe"}, os.Environ()); err != nil {
-		panic(err)
-	}
+	panicIfNot(http.ErrServerClosed, srv.ListenAndServe())
 }
