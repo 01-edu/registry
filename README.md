@@ -71,7 +71,7 @@ To make it start with the system, edit cron jobs:
 crontab -e
 ```
 
-Add this line at the end:
+Add this line:
 
 ```
 @reboot cd /opt/registry && ./registry 2>log.txt &
