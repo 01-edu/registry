@@ -84,9 +84,9 @@ func build(URLToBuild <-chan string) {
 	for URL := range URLToBuild {
 		dir := path.Join("repositories", strings.TrimSuffix(path.Base(URL), ".git"))
 		if _, err := os.Stat(dir); os.IsNotExist(err) && !run("git", "clone", URL, dir) {
-			return
+			continue
 		} else if !run("git", "-C", dir, "pull", "--ff-only") {
-			return
+			continue
 		}
 		for image, cfg := range imagesToBuild() {
 			if URL == cfg.URL {
