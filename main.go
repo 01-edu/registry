@@ -20,8 +20,14 @@ type config struct {
 	File string // Dockerfile
 }
 
-// m is used to lock JSON files
-var m sync.RWMutex
+var (
+	// m is used to lock JSON files
+	m sync.RWMutex
+
+	URLToBuild = make(chan string)
+
+	triggerMirror = make(chan struct{}, 1)
+)
 
 func panicIfNot(target, err error) {
 	if err != nil && err != target && !errors.Is(err, target) {
@@ -76,11 +82,14 @@ func mirror() {
 				run("docker", "push", "docker.01-edu.org/"+image)
 			}
 		}
-		time.Sleep(time.Until(next))
+		select {
+		case <-time.After(time.Until(next)):
+		case <-triggerMirror:
+		}
 	}
 }
 
-func build(URLToBuild <-chan string) {
+func build() {
 	for URL := range URLToBuild {
 		dir := path.Join("repositories", strings.TrimSuffix(path.Base(URL), ".git"))
 		if _, err := os.Stat(dir); os.IsNotExist(err) && !run("git", "clone", URL, dir) {
@@ -110,36 +119,8 @@ func build(URLToBuild <-chan string) {
 	}
 }
 
-func handleWebhook(URLToBuild chan<- string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost { // GitHub webhooks are POST requests
-			return
-		}
-		var payload struct {
-			Ref        string
-			Repository struct {
-				URL string `json:"ssh_url"`
-			}
-		}
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			log.Println("Cannot decode webhook", err)
-		} else if payload.Ref != "refs/heads/master" && payload.Ref != "refs/heads/main" {
-			log.Println("Branch is not master/main", payload.Ref)
-		} else if payload.Repository.URL == "git@github.com:01-edu/registry.git" {
-			m.Lock()
-			run("git", "pull", "--ff-only")
-			m.Unlock()
-		} else if payload.Repository.URL != "" {
-			URLToBuild <- payload.Repository.URL
-		}
-	}
-}
-
-func main() {
-	go mirror()
-	URLToBuild := make(chan string)
-	go build(URLToBuild)
-	go func() { // first build
+func buildAllImages() {
+	go func() {
 		URL := map[string]struct{}{}
 		for _, cfg := range imagesToBuild() {
 			URL[cfg.URL] = struct{}{}
@@ -148,7 +129,41 @@ func main() {
 			URLToBuild <- URL
 		}
 	}()
-	http.HandleFunc("/", handleWebhook(URLToBuild))
+}
+
+func handleWebhook(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost { // GitHub webhooks are POST requests
+		return
+	}
+	var payload struct {
+		Ref        string
+		Repository struct {
+			URL string `json:"ssh_url"`
+		}
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Println("Cannot decode webhook", err)
+	} else if payload.Ref != "refs/heads/master" && payload.Ref != "refs/heads/main" {
+		log.Println("Branch is not master/main", payload.Ref)
+	} else if payload.Repository.URL == "git@github.com:01-edu/registry.git" {
+		m.Lock()
+		run("git", "pull", "--ff-only")
+		m.Unlock()
+		buildAllImages()
+		select {
+		case triggerMirror <- struct{}{}:
+		default:
+		}
+	} else if payload.Repository.URL != "" {
+		URLToBuild <- payload.Repository.URL
+	}
+}
+
+func main() {
+	go mirror()
+	go build()
+	buildAllImages()
+	http.HandleFunc("/", handleWebhook)
 	srv := http.Server{
 		Addr:         ":8081",
 		ReadTimeout:  15 * time.Second,
