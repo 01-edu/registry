@@ -9,7 +9,7 @@
   "caddy:2.3.0-alpine",
   "debian:10.9-slim",
   "gitea/gitea:1.11.8",
-  "gitea/gitea:1.13.6",
+  "gitea/gitea:1.14",
   "golang:1.16.0-alpine3.13",
   "golang:1.16.3-alpine3.13",
   "hasura/graphql-engine:v1.3.2.cli-migrations",
