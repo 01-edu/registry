@@ -95,7 +95,7 @@ To check if the service is working properly, check the [logs](https://webhook.do
 - To mirror an already existing image: edit [mirror.json](mirror.json).
 - To make a `PUT` HTTP request to webhooks: edit [webhooks.json](webhooks.json).
 
-If you edit those files directly on GitHub or push them, the registry service will pull the new changes and take them into account.
+If you edit those files directly on GitHub or push them, the service will pull the new changes and take them into account.
 
 #### Trigger
 
