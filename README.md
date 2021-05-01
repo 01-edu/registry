@@ -48,7 +48,7 @@ docker login docker.01-edu.org
 
 ```
 go build
-./registry 2>log.txt &
+./registry -port 8081 2>log.txt &
 ```
 
 Check that the images are correctly built:
@@ -74,7 +74,7 @@ crontab -e
 Add this line:
 
 ```
-@reboot cd /opt/registry && ./registry 2>log.txt &
+@reboot cd /opt/registry && ./registry -port 8081 2>log.txt &
 ```
 
 Save & exit.

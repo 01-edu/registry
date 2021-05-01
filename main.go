@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -164,8 +165,10 @@ func main() {
 	go build()
 	buildAllImages()
 	http.HandleFunc("/", handleWebhook)
+	port := flag.String("port", "8080", "listening port")
+	flag.Parse()
 	srv := http.Server{
-		Addr:         ":8081",
+		Addr:         ":" + *port,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
