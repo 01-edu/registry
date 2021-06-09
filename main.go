@@ -30,7 +30,7 @@ var (
 	triggerMirror = make(chan struct{}, 1)
 )
 
-func panicIfNot(target, err error) {
+func expect(target, err error) {
 	if err != nil && err != target && !errors.Is(err, target) {
 		panic(err)
 	}
@@ -40,8 +40,8 @@ func readJSON(file string, v interface{}) {
 	m.RLock()
 	defer m.RUnlock()
 	b, err := os.ReadFile(file)
-	panicIfNot(nil, err)
-	panicIfNot(nil, json.Unmarshal(b, v))
+	expect(nil, err)
+	expect(nil, json.Unmarshal(b, v))
 }
 
 func webhooks() (webhooksToCall []string) {
@@ -106,7 +106,7 @@ func build() {
 					run("docker", "push", "docker.01-edu.org/"+image) {
 					for _, webhook := range webhooks() {
 						req, err := http.NewRequest("PUT", webhook, nil)
-						panicIfNot(nil, err)
+						expect(nil, err)
 						resp, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
 						if err != nil {
 							log.Println(webhook, err)
@@ -172,5 +172,5 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
-	panicIfNot(http.ErrServerClosed, srv.ListenAndServe())
+	expect(http.ErrServerClosed, srv.ListenAndServe())
 }
