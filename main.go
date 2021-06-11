@@ -76,7 +76,7 @@ func run(name string, args ...string) bool {
 
 func mirror() {
 	for {
-		next := time.Now().AddDate(0, 0, 1)
+		nextTime := time.Now().AddDate(0, 0, 1)
 		for _, image := range imagesToMirror() {
 			if run("docker", "pull", image) &&
 				run("docker", "tag", image, "docker.01-edu.org/"+image) {
@@ -84,7 +84,7 @@ func mirror() {
 			}
 		}
 		select {
-		case <-time.After(time.Until(next)):
+		case <-time.After(time.Until(nextTime)):
 		case <-triggerMirror:
 		}
 	}
