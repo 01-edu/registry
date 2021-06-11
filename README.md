@@ -8,7 +8,7 @@ Our own Docker registry.
 
 - Docker Hub is taking a very long time to build (up to half an hour)
 - Now rate limits the pulls
-- Is quite easy to reimplement
+- Is quite easy to re-implement
 
 ### What - Solution
 
@@ -99,7 +99,7 @@ If you edit those files directly on GitHub or push them, the service will pull t
 
 #### Trigger
 
-Manually trigger a rebuild (because the webhook wasn't configured correctly), here is an exmaple with github.com/01-edu/public:
+Manually trigger a rebuild (because the webhook wasn't configured correctly), here is an example with github.com/01-edu/public:
 
 ```
 curl https://webhook.docker.01-edu.org -d'{"ref":"refs/heads/master","repository":{"ssh_url":"git@github.com:01-edu/public.git"}}'
