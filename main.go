@@ -41,7 +41,9 @@ func readJSON(file string, v interface{}) {
 	defer m.RUnlock()
 	b, err := os.ReadFile(file)
 	expect(nil, err)
-	expect(nil, json.Unmarshal(b, v))
+	if err := json.Unmarshal(b, v); err != nil {
+		log.Println("Cannot unmarshal JSON file", err)
+	}
 }
 
 func webhooks() (webhooksToCall []string) {
