@@ -38,5 +38,10 @@
     "URL": "git@github.com:01-edu/rust-tests.git",
     "path": "",
     "file": "Dockerfile"
+  },
+  "test-blockchain": {
+    "URL": "git@github.com:01-edu/Branch-Blockchain.git",
+    "path": "",
+    "file": "Dockerfile"
   }
 }
