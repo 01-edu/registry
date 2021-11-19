@@ -41,7 +41,7 @@
   },
   "test-blockchain": {
     "URL": "git@github.com:01-edu/Branch-Blockchain.git",
-    "path": "",
+    "path": "tests",
     "file": "Dockerfile"
   }
 }
