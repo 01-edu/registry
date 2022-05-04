@@ -17,6 +17,7 @@
   "hasura/graphql-engine:v1.3.2.cli-migrations",
   "hasura/graphql-engine:v1.3.3.cli-migrations",
   "hasura/graphql-engine:v2.0.10.cli-migrations-v3",
+  "hasura/graphql-engine:v2.6.1.cli-migrations-v3",
   "node:14.15.5-alpine3.13",
   "node:14.16.0-alpine3.13",
   "node:16.10.0-alpine3.13",
