@@ -22,7 +22,7 @@ Following the [official guide](https://docs.docker.com/registry) but using [Cadd
 
 ### Registry
 
-```
+```bash
 docker run --detach --publish 5000:5000 --restart=unless-stopped --name registry --volume registry:/var/lib/registry registry:2.7.1
 ```
 
@@ -30,11 +30,17 @@ docker run --detach --publish 5000:5000 --restart=unless-stopped --name registry
 
 Clone this repository in `/opt` and enter the directory.
 
+```bash
+cd /opt
+git clone git@github.com:01-edu/registry.git
+cd /opt/registry
+```
+
 ### Web server
 
 Install [Caddy](https://caddyserver.com/docs/download#debian-ubuntu-raspbian), add the [Caddyfile](Caddyfile) to `/etc/caddy/Caddyfile` and reload it:
 
-```
+```bash
 systemctl reload caddy
 ```
 
@@ -42,24 +48,24 @@ systemctl reload caddy
 
 First time only (to allow the service to push to the Docker registry) :
 
-```
+```bash
 docker login docker.01-edu.org
 ```
 
-```
+```bash
 go build
 ./registry -port 8081 2>log.txt &
 ```
 
 Check that the images are correctly built:
 
-```
+```bash
 tail -f log.txt
 ```
 
 After a moment you should see messages like this:
 
-```
+```log
 2021/04/08 16:20:01 docker [pull alpine:3.13.2]
 2021/04/08 16:20:03 docker [tag alpine:3.13.2 docker.01-edu.org/alpine:3.13.2]
 2021/04/08 16:20:03 docker [push docker.01-edu.org/alpine:3.13.2]
@@ -67,14 +73,14 @@ After a moment you should see messages like this:
 
 To make it start with the system, edit cron jobs:
 
-```
+```bash
 crontab -e
 ```
 
 Add this line:
 
-```
-@reboot cd /opt/registry && ./registry -port 8081 2>log.txt &
+```bash
+@reboot /usr/bin/env bash -l sleep 10; /opt/registry/restartRegistry.sh
 ```
 
 Save & exit.
@@ -83,7 +89,7 @@ Save & exit.
 
 To pull from this registry you need to login first (with the password defined in [Caddyfile](Caddyfile)):
 
-```
+```bash
 docker login docker.01-edu.org
 ```
 
@@ -101,7 +107,7 @@ If you edit those files directly on GitHub or push them, the service will pull t
 
 Manually trigger a rebuild (because the webhook wasn't configured correctly), here is an example with github.com/01-edu/public:
 
-```
+```bash
 curl https://webhook.docker.01-edu.org -d'{"ref":"refs/heads/master","repository":{"ssh_url":"git@github.com:01-edu/public.git"}}'
 ```
 
@@ -109,6 +115,15 @@ curl https://webhook.docker.01-edu.org -d'{"ref":"refs/heads/master","repository
 
 To remove dangling images in the registry:
 
-```
+```bash
 docker exec registry bin/registry garbage-collect /etc/docker/registry/config.yml --delete-untagged=true
+```
+
+## Re-launching
+
+To relaunch art the registry service you can simply run the `restartRegistry.sh` script.
+
+```bash
+cd /opt/registry
+./restartRegistry.sh
 ```
