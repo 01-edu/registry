@@ -35,8 +35,8 @@
     "file": "Dockerfile"
   },
   "test-goqa": {
-    "URL": "git@github.com:01-edu/go-tests-training.git",
-    "path": "",
+    "URL": "git@github.com:01-edu/qa.git",
+    "path": "go",
     "file": "Dockerfile"
   },
   "test-rust": {
