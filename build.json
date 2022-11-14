@@ -48,5 +48,10 @@
     "URL": "git@github.com:01-edu/Branch-Blockchain.git",
     "path": "tests",
     "file": "Dockerfile"
+  },
+    "test-dart": {
+    "URL": "git@github.com:01-edu/Branch-Mobile.git",
+    "path": "tests/piscine_flutter",
+    "file": "Dockerfile"
   }
 }
