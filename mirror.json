@@ -32,6 +32,7 @@
   "node:16.14.2-alpine3.15",
   "node:18.1-alpine3.15",
   "postgres:11.11",
+  "postgres:11.18-bullseye",
   "postgres:12.6",
   "postgres:14.2",
   "postgres:15.1"
