@@ -53,5 +53,10 @@
     "URL": "git@github.com:01-edu/Branch-Mobile.git",
     "path": "tests/piscine_flutter",
     "file": "Dockerfile"
+  },
+    "test-java": {
+    "URL": "git@github.com:01-edu/java-tests.git",
+    "path": "",
+    "file": "Dockerfile"
   }
 }
