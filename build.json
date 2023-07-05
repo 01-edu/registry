@@ -58,5 +58,10 @@
     "URL": "git@github.com:01-edu/java-tests.git",
     "path": "",
     "file": "Dockerfile"
+  },
+    "test-python": {
+    "URL": "git@github.com:01-edu/python-tests.git",
+    "path": "",
+    "file": "Dockerfile"
   }
 }
