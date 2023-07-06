@@ -1,22 +1,25 @@
-# registry
+# 🐳 registry
 
-Our own Docker registry.
+Self-hosted Docker registry with automated build services.
 
-## Reasons
+---
 
-### Why - Context
+#### ⚠️ Deprecations:
 
-- Docker Hub is taking a very long time to build (up to half an hour)
-- Now rate limits the pulls
-- Is quite easy to re-implement
+<details> 
+<summary> Automated builds: </summary>
 
-### What - Solution
+[`build.json`](https://github.com/01-edu/registry/blob/master/build.json)
 
-Deploying a web server, a registry (as a Docker container) and an automated build service on a dedicated server guarantees unlimited pulls & fast builds.
+<sub> The legacy build list from the URL above is being deprecated due to the new method of hosting images through the GitHub Container Registry </sub>
 
-### How - Decision
+</details>
 
-Following the [official guide](https://docs.docker.com/registry) but using [Caddy](https://caddyserver.com) to handle HTTPS (because it's easier), authentication (because it's easier) and proxy to the service.
+#### 📦 Packages:
+
+Our GitHub Container Registry package list can be seen here:
+
+- [01 Packages](https://github.com/orgs/01-edu/packages)
 
 ## Installation
 
@@ -63,7 +66,7 @@ Check that the images are correctly built:
 tail -f log.txt
 ```
 
-After a moment you should see messages like this:
+After a moment, you should see some messages similar to this:
 
 ```log
 2021/04/08 16:20:01 docker [pull alpine:3.13.2]
@@ -87,13 +90,13 @@ Save & exit.
 
 ## Usage
 
-To pull from this registry you need to login first (with the password defined in [Caddyfile](Caddyfile)):
+To pull from this registry, you need to log in first (with the password defined in [Caddyfile](Caddyfile)):
 
 ```bash
 docker login docker.01-edu.org
 ```
 
-To check if the service is working properly, check the [logs](https://webhook.docker.01-edu.org/log.txt).
+To check if the service is working correctly, check the [logs](https://webhook.docker.01-edu.org/log.txt).
 
 #### Add an image
 
@@ -105,7 +108,7 @@ If you edit those files directly on GitHub or push them, the service will pull t
 
 #### Trigger
 
-Manually trigger a rebuild (because the webhook wasn't configured correctly), here is an example with github.com/01-edu/public:
+Manually trigger a rebuild (because the webhook wasn't configured correctly); here is an example with github.com/01-edu/public:
 
 ```bash
 curl https://webhook.docker.01-edu.org -d'{"ref":"refs/heads/master","repository":{"ssh_url":"git@github.com:01-edu/public.git"}}'
@@ -121,9 +124,25 @@ docker exec registry bin/registry garbage-collect /etc/docker/registry/config.ym
 
 ## Re-launching
 
-To relaunch art the registry service you can simply run the `restartRegistry.sh` script.
+To relaunch the registry service, you can run the `restartRegistry.sh` script.
 
 ```bash
 cd /opt/registry
 ./restartRegistry.sh
 ```
+
+## Reasons
+
+### Why - Context
+
+- Docker Hub is taking a very long time to build (up to half an hour)
+- Now rate limits the pulls
+- Is quite easy to re-implement
+
+### What - Solution
+
+Deploying a web server, a registry (as a Docker container), and an automated build service on a dedicated server guarantees unlimited pulls & fast builds.
+
+### How - Decision
+
+Following the [official guide](https://docs.docker.com/registry) but using [Caddy](https://caddyserver.com) to handle HTTPS (because it's easier), authentication (because it's easier) and proxy to the service.
