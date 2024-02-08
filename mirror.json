@@ -33,6 +33,7 @@
   "hasura/graphql-engine:v2.13.1.cli-migrations-v3",
   "hasura/graphql-engine:v2.15.0.cli-migrations-v3",
   "hasura/graphql-engine:v2.15.2.cli-migrations-v3",
+  "hasura/graphql-engine:v2.37.0-ce.cli-migrations-v3",
   "node:14.15.5-alpine3.13",
   "node:14.16.0-alpine3.13",
   "node:16.10.0-alpine3.13",
@@ -41,7 +42,10 @@
   "node:18.14.0-alpine3.16",
   "postgres:11.11",
   "postgres:11.18-bullseye",
+  "postgres:11-bullseye",
   "postgres:12.6",
+  "postgres:14-bullseye",
   "postgres:14.2",
-  "postgres:15.1"
+  "postgres:15.1",
+  "postgres:16-bullseye"
 ]
