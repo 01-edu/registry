@@ -1,19 +1,18 @@
 # 🐳 registry
 
+> [!IMPORTANT]  
+> [![🐳 Check Registry build](https://github.com/01-edu/registry/actions/workflows/ga-check-build.yml/badge.svg)](https://github.com/01-edu/registry/actions/workflows/ga-check-build.yml)
+
 Self-hosted Docker registry with automated build services.
 
----
 
-#### ⚠️ Deprecations:
-
-<details> 
-<summary> Automated builds: </summary>
-
-[`build.json`](https://github.com/01-edu/registry/blob/master/build.json)
-
-<sub> The legacy build list from the URL above is being deprecated due to the new method of hosting images through the GitHub Container Registry </sub>
-
-</details>
+> [!WARNING]  
+> #### Deprecations:
+>
+> Automated builds: [`build.json`](https://github.com/01-edu/registry/blob/master/build.json)
+> 
+> >The legacy build list from the URL above is being deprecated due to the new method of hosting images through the GitHub Container Registry.
+>
 
 #### 📦 Packages:
 
