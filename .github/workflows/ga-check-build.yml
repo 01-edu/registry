@@ -1,0 +1,25 @@
+name: 🐳 Check Registry build
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  check-build:
+    name: 🐳 Check Registry build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🐧 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐻 Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: 🛠️ Test build
+        run: |
+          go build
